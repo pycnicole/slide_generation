@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>零信任架構（Zero Trust）新手教學簡報 v2</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --surface: #162033;
+      --surface-soft: #1e2b45;
+      --border: #2c3e5e;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-bg: rgba(56, 189, 248, 0.12);
+      --green: #34d399;
+      --green-bg: rgba(52, 211, 153, 0.12);
+      --amber: #fbbf24;
+      --amber-bg: rgba(251, 191, 36, 0.12);
+      --rose: #fb7185;
+      --rose-bg: rgba(251, 113, 133, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Bar */
+    header {
+      height: 52px;
+      padding: 0 28px;
+      background: rgba(11, 17, 32, 0.95);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.88rem;
+    }
+
+    .brand {
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+    }
+
+    .wiki-tag {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.78rem;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 3px;
+      background: var(--surface);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 10%;
+      background: linear-gradient(90deg, var(--accent), var(--green));
+      transition: width 0.28s ease;
+    }
+
+    /* Main Stage */
+    main {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: 44px 72px;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      max-width: 1080px;
+      margin: 0 auto;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .slide.active {
+      display: flex;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .kicker {
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+
+    h1 {
+      font-size: 2.9rem;
+      line-height: 1.22;
+      margin-bottom: 18px;
+      max-width: 820px;
+    }
+
+    h2 {
+      font-size: 2rem;
+      line-height: 1.28;
+      margin-bottom: 14px;
+    }
+
+    .subtitle {
+      font-size: 1.2rem;
+      line-height: 1.7;
+      color: var(--muted);
+      max-width: 740px;
+      margin-bottom: 28px;
+    }
+
+    /* Cover Specific */
+    .cover-box {
+      padding: 12px 0;
+    }
+
+    .cover-pill {
+      display: inline-block;
+      background: var(--accent-bg);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .start-btn {
+      background: var(--accent);
+      color: #061021;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      width: fit-content;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    .start-btn:hover {
+      transform: translateY(-1px);
+      opacity: 0.95;
+    }
+
+    /* Agenda List */
+    .agenda-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-top: 8px;
+    }
+
+    .agenda-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 22px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .agenda-num {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--accent);
+      background: var(--accent-bg);
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .agenda-item h3 {
+      font-size: 1.08rem;
+      margin-bottom: 4px;
+    }
+
+    .agenda-item p {
+      font-size: 0.92rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* Content Layouts */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+      margin-top: 8px;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+    }
+
+    .panel h3 {
+      font-size: 1.15rem;
+      margin-bottom: 10px;
+    }
+
+    .panel p, .panel li {
+      font-size: 0.98rem;
+      line-height: 1.65;
+      color: #cbd5e1;
+    }
+
+    .panel ul {
+      padding-left: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+
+    .b-blue { background: var(--accent-bg); color: var(--accent); }
+    .b-green { background: var(--green-bg); color: var(--green); }
+    .b-amber { background: var(--amber-bg); color: var(--amber); }
+    .b-rose { background: var(--rose-bg); color: var(--rose); }
+
+    /* Transition Bridge */
+    .bridge {
+      margin-top: 22px;
+      padding: 13px 18px;
+      border-radius: 10px;
+      background: var(--surface-soft);
+      border-left: 4px solid var(--green);
+      font-size: 0.94rem;
+      color: #e2e8f0;
+      line-height: 1.55;
+    }
+
+    .bridge span {
+      color: var(--green);
+      font-weight: 700;
+    }
+
+    /* Step Strip */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    .step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+    }
+
+    .step-tag {
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    .step h4 {
+      font-size: 1.02rem;
+      margin-bottom: 6px;
+    }
+
+    .step p {
+      font-size: 0.9rem;
+      color: #cbd5e1;
+      line-height: 1.55;
+    }
+
+    /* Quiz */
+    .quiz-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 15px 20px;
+      margin-bottom: 12px;
+    }
+
+    .quiz-title {
+      font-weight: 700;
+      font-size: 0.98rem;
+      margin-bottom: 10px;
+    }
+
+    .quiz-opts {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .q-btn {
+      background: var(--surface-soft);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      cursor: pointer;
+    }
+
+    .q-btn:hover {
+      border-color: var(--accent);
+    }
+
+    .q-msg {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+
+    /* Footer */
+    footer {
+      height: 58px;
+      padding: 0 28px;
+      background: rgba(11, 17, 32, 0.95);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .tip {
+      font-size: 0.84rem;
+      color: var(--muted);
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    button.ctrl {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 7px 15px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button.ctrl:hover:not(:disabled) {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    button.ctrl:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 860px) {
+      body { overflow-y: auto; height: auto; }
+      .slide { position: static; padding: 28px 20px; height: auto; }
+      .agenda-list, .two-col, .steps { grid-template-columns: 1fr; }
+      h1 { font-size: 2.1rem; }
+      h2 { font-size: 1.55rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">Zero Trust 新手教學（v2）</div>
+    <div class="wiki-tag" id="wiki-indicator">Wiki：index.md [S1-S3]</div>
+  </header>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+
+  <main>
+    <!-- 01: Cover -->
+    <section class="slide active" data-wiki="index.md [S1-S3]">
+      <div class="cover-box">
+        <div class="cover-pill">零基礎資安概念入門 · 基於 LLM Wiki 知識庫</div>
+        <h1>零信任架構<br>（Zero Trust Architecture）</h1>
+        <p class="subtitle">
+          為什麼「進了公司內網也不再自動被信任」？用 10 分鐘帶你從零看懂零信任的核心思維、運作方式與常見迷思。
+        </p>
+        <button class="start-btn" onclick="goSlide(1)">開始課程大綱 →</button>
+      </div>
+    </section>
+
+    <!-- 02: Agenda -->
+    <section class="slide" data-wiki="index.md [S1-S5]">
+      <div class="kicker">01 / 課程地圖</div>
+      <h2>今天我們會走過這四個階段</h2>
+      <p class="subtitle" style="margin-bottom: 18px;">
+        先看清舊方法為什麼失靈，再理解零信任的原則與幕後運作，最後一起拆解常見迷思。
+      </p>
+      <div class="agenda-list">
+        <div class="agenda-item">
+          <div class="agenda-num">1</div>
+          <div>
+            <h3>為什麼傳統內網不再安全？</h3>
+            <p>認識「城堡與護城河」模型，以及遠端辦公與橫向移動帶來的挑戰。</p>
+          </div>
+        </div>
+        <div class="agenda-item">
+          <div class="agenda-num">2</div>
+          <div>
+            <h3>核心原則與台灣實務做法</h3>
+            <p>掌握三大核心原則，並看台灣數發部如何用身分、設備與信任分數把關。</p>
+          </div>
+        </div>
+        <div class="agenda-item">
+          <div class="agenda-num">3</div>
+          <div>
+            <h3>幕後怎麼運作與持續驗證</h3>
+            <p>用門禁比喻理解決策與執行分工，以及連線期間的動態檢查。</p>
+          </div>
+        </div>
+        <div class="agenda-item">
+          <div class="agenda-num">4</div>
+          <div>
+            <h3>常見迷思與隨堂小測驗</h3>
+            <p>釐清網路分段與防火牆的誤區，並用三題情境測驗檢視吸收程度。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03: Traditional Moat -->
+    <section class="slide" data-wiki="01-why-traditional-fails.md [S1, S2]">
+      <div class="kicker">02 / 為什麼舊方法失靈</div>
+      <h2>過去的資安像「蓋城堡、挖護城河」</h2>
+      <p class="subtitle" style="margin-bottom: 18px;">
+        傳統邊界防禦把外部擋在門外，但只要進了內部網路，往往預設每個人與裝置都是可信的。
+      </p>
+      <div class="two-col">
+        <div class="panel">
+          <span class="badge b-amber">傳統邊界思維</span>
+          <h3>進門之後就放鬆警戒</h3>
+          <ul>
+            <li>外部攻擊難度高，但內部網路與區段常被視為安全地帶。</li>
+            <li>傳統 VPN 連上後，容易取得較廣的網路存取範圍，流量也常繞回資料中心。</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <span class="badge b-rose">現代環境的衝擊</span>
+          <h3>城牆已經包不住資料</h3>
+          <ul>
+            <li>員工在家、出差或使用自攜設備（BYOD），系統與資料分散在多家雲端。</li>
+            <li>一旦有帳號或裝置被攻破，攻擊者可能在內網<strong>橫向移動</strong>，單次資料外洩平均成本更超過 300 萬美元。</li>
+          </ul>
+        </div>
+      </div>
+      <div class="bridge">
+        <span>往下走一步：</span>既然「身處內網」不再等於安全，零信任主張的是<strong>「無隱含信任」</strong>——那具體該怎麼做？下一頁看三大核心原則。
+      </div>
+    </section>
+
+    <!-- 04: Three Core Principles -->
+    <section class="slide" data-wiki="02-core-principles.md [S3]">
+      <div class="kicker">03 / 核心原則</div>
+      <h2>零信任的三句核心心法</h2>
+      <p class="subtitle" style="margin-bottom: 18px;">
+        以 Microsoft Security 歸納的國際原則來看，零信任把每一次存取都當成需要重新確認的請求：
+      </p>
+      <div class="two-col">
+        <div class="panel">
+          <span class="badge b-blue">驗證與權限</span>
+          <h3>1. 明確驗證 ＋ 2. 最低權限</h3>
+          <ul>
+            <li><strong>明確驗證（Verify explicitly）</strong>：每次存取都綜合身分、位置、裝置等訊號評估，不只看一次帳密。</li>
+            <li><strong>最低權限存取</strong>：只給完成工作所需的最小權限，降低帳號被盜時的損害範圍。</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <span class="badge b-rose">風險假設</span>
+          <h3>3. 假設已遭入侵（Assume Breach）</h3>
+          <ul>
+            <li>不假設系統永遠不會被攻破，而是先假設內部可能已有破口。</li>
+            <li>透過網路區隔與持續監控主動縮小影響範圍，不讓單點失守演變成全線崩潰。</li>
+          </ul>
+        </div>
+      </div>
+      <div class="bridge">
+        <span>往下走一步：</span>原則聽起來很抽象，台灣在政府實務上又是怎麼落地的？下一頁看數位發展部的三大機制。
+      </div>
+    </section>
+
+    <!-- 05: Taiwan MODA -->
+    <section class="slide" data-wiki="02-core-principles.md [S4]">
+      <div class="kicker">03 / 台灣實務落地</div>
+      <h2>數發部的三大核心機制：人、設備、信任分數</h2>
+      <p class="subtitle" style="margin-bottom: 18px;">
+        台灣政府採「資源門戶部署」模式推動零信任，把關卡拆成三個互相配合的機制：
+      </p>
+      <div class="steps" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="step">
+          <div class="step-tag">機制 1 · 身分鑑別</div>
+          <h4>不只看帳號密碼</h4>
+          <p>經註冊、鑑別、聲明三階段；登入改用雙因子硬體金鑰（如 FIDO2），傳遞身分訊息也須簽章加密。</p>
+        </div>
+        <div class="step">
+          <div class="step-tag">機制 2 · 設備鑑別</div>
+          <h4>確認「哪台裝置」在連線</h4>
+          <p>設備需註冊並安裝代理程式，透過安全晶片或公私鑰驗證；重要後臺只允許已註冊設備連線。</p>
+        </div>
+        <div class="step">
+          <div class="step-tag">機制 3 · 信任推斷</div>
+          <h4>算分數決定准不准進</h4>
+          <p>依身分、設備健康度、IP 與時間算「信任分數（0～1）」。例如數發部官網後臺要求公發設備且分數 <strong>≥ 0.9</strong>。</p>
+        </div>
+      </div>
+      <div class="bridge">
+        <span>往下走一步：</span>知道「要看什麼條件」後，系統幕後是哪幾個角色在算分數、擋連線？下一頁用門禁比喻拆解。
+      </div>
+    </section>
+
+    <!-- 06: PDP & PEP -->
+    <section class="slide" data-wiki="03-how-it-works.md [S1]">
+      <div class="kicker">04 / 幕後運作架構</div>
+      <h2>用「智慧門禁」看懂 PDP 與 PEP</h2>
+      <p class="subtitle" style="margin-bottom: 18px;">
+        NIST SP 800-207 將零信任拆成邏輯組件，把「算決策」與「實際執行擋或放」分開：
+      </p>
+      <div class="two-col">
+        <div class="panel">
+          <span class="badge b-blue">決策大腦 · PDP</span>
+          <h3>策略決策點（Policy Decision Point）</h3>
+          <ul>
+            <li><strong>像查名單與算分數的主管</strong>：評估政策與輔助資訊，計算准許、拒絕或撤銷存取。</li>
+            <li>由<strong>策略引擎（PE）</strong>做決策、<strong>策略管理員（PA）</strong>發指令建立或中斷連線。</li>
+          </ul>
+        </div>
+        <div class="panel">
+          <span class="badge b-green">門口守門員 · PEP & PIP</span>
+          <h3>策略執行點與資訊來源</h3>
+          <ul>
+            <li><strong>PEP（策略執行點）</strong>：站在資源門口的守門員，依 PDP 指令實際放行或阻擋。</li>
+            <li><strong>PIP（策略資訊點）</strong>：提供遙測與環境資訊，讓 PDP 有足夠依據做判斷。</li>
+          </ul>
+        </div>
+      </div>
+      <div class="bridge">
+        <span>往下走一步：</span>通過一開始的檢查就一勞永逸了嗎？不是，連線過程中還會持續驗證。下一頁看完整流程。
+      </div>
+    </section>
+
+    <!-- 07: Continuous Verification -->
+    <section class="slide" data-wiki="03-how-it-works.md [S2, S4, S5]">
+      <div class="kicker">04 / 動態持續驗證</div>
+      <h2>連線期間也在看：四步走完一次安全存取</h2>
+      <p class="subtitle" style="margin-bottom: 18px;">
+        零信任不只在登入那一刻檢查，在整個工作階段（Session）中都會持續監控狀態與風險變化：
+      </p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-tag">STEP 1</div>
+          <h4>經由存取閘道</h4>
+          <p>先過閘道隱藏內部系統位址，只針對授權資源建立連線。</p>
+        </div>
+        <div class="step">
+          <div class="step-tag">STEP 2</div>
+          <h4>人與設備雙重驗</h4>
+          <p>核對人員（含服務帳號）身分與裝置憑證、健康狀態。</p>
+        </div>
+        <div class="step">
+          <div class="step-tag">STEP 3</div>
+          <h4>階段中持續監控</h4>
+          <p>追蹤行為模式、位置、安全協定與異常事件，逾時或異常就重驗。</p>
+        </div>
+        <div class="step">
+          <div class="step-tag">STEP 4</div>
+          <h4>即時回應與隔離</h4>
+          <p>串接 SIEM、IdP 與 AI 基線分析，自動限制威脅擴散範圍。</p>
+        </div>
+      </div>
+      <div class="bridge">
+        <span>往下走一步：</span>概念越來越清楚了，不過實務上很多人會誤會「切網段」或「裝防火牆」就是零信任。下一頁來排雷。
+      </div>
+    </section>
+
+    <!-- 08: Myths -->
+    <section class="slide" data-wiki="04-myths-and-limits.md [S2, S4, S5]">
+      <div class="kicker">05 / 常見迷思排雷</div>
+      <h2>新手最常誤會的兩個導入迷思</h2>
+      <p class="subtitle" style="margin-bottom: 18px;">
+        想把零信任看懂，先避開這兩個最常見的誤解：
+      </p>
+      <div class="two-col">
+        <div class="panel">
+          <span class="badge b-rose">迷思 1</span>
+          <h3>「有做網路分段，就是零信任了？」</h3>
+          <p>
+            網路分段只是<strong>戰術工具</strong>，不是完整戰略。零信任強調「由內而外」先鎖定真正要保護的核心資料與應用（<strong>保護面 Protect Surface</strong>），再搭配身分驗證與動態策略控管。
+          </p>
+        </div>
+        <div class="panel">
+          <span class="badge b-amber">迷思 2</span>
+          <h3>「只靠 Layer 3 技術或一次買齊就夠了？」</h3>
+          <p>
+            攻擊者常能繞過 Layer 3／Layer 4 控制，真正的零信任需在 <strong>Layer 7（應用層）</strong> 執行細粒度政策；且可依方法論分階段導入，不必一次全部打掉重練。
+          </p>
+        </div>
+      </div>
+      <div class="bridge">
+        <span>最後一步：</span>你已經走完零信任的核心脈絡了！下一頁用三題小測驗快速檢視一下吧。
+      </div>
+    </section>
+
+    <!-- 09: Quiz -->
+    <section class="slide" data-wiki="index.md ~ 04-myths-and-limits.md [S1-S5]">
+      <div class="kicker">06 / 隨堂自我檢測</div>
+      <h2>三題小測驗：看看你抓住了沒？</h2>
+
+      <div class="quiz-card">
+        <div class="quiz-title">1. 在零信任架構下，員工連上公司內網後，存取敏感系統還需要驗證嗎？</div>
+        <div class="quiz-opts">
+          <button class="q-btn" onclick="checkAns('a1', true)">需要，內網沒有隱含信任</button>
+          <button class="q-btn" onclick="checkAns('a1', false)">不需要，在內網就是自己人</button>
+          <span class="q-msg" id="a1"></span>
+        </div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-title">2. 負責評估政策、計算存取決策並下令建立或中斷連線的是哪一端？</div>
+        <div class="quiz-opts">
+          <button class="q-btn" onclick="checkAns('a2', true)">PDP（策略決策點）</button>
+          <button class="q-btn" onclick="checkAns('a2', false)">只靠單純的 Layer 3 網路分段</button>
+          <span class="q-msg" id="a2"></span>
+        </div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-title">3. 網路分段（Network Segmentation）本身就等於完整的零信任架構嗎？</div>
+        <div class="quiz-opts">
+          <button class="q-btn" onclick="checkAns('a3', false)">是的，分段就夠了</button>
+          <button class="q-btn" onclick="checkAns('a3', true)">不是，它是工具之一，仍需保護面與持續驗證</button>
+          <span class="q-msg" id="a3"></span>
+        </div>
+      </div>
+
+      <div class="bridge">
+        <span>課程完成：</span>核心重點是<strong>「無隱含信任、驗證人與設備、最小權限、持續評估」</strong>。
+      </div>
+    </section>
+
+    <!-- 10: Closing -->
+    <section class="slide" data-wiki="index.md [S1-S5]">
+      <div class="kicker">課程結束</div>
+      <h2>謝謝閱讀！</h2>
+      <p class="subtitle">
+        你已經從傳統「城堡與護城河」的邊界思維，走到了零信任「每次存取都驗證」的現代資安視角。
+      </p>
+      <button class="start-btn" onclick="goSlide(0)">← 回到封面</button>
+    </section>
+  </main>
+
+  <footer>
+    <div class="tip">使用 <strong>← / →</strong> 方向鍵或下方按鈕切換投影片</div>
+    <div class="controls">
+      <button class="ctrl" id="btn-prev" onclick="stepSlide(-1)">← 上一頁</button>
+      <span id="counter" style="font-weight: 700; min-width: 68px; text-align: center;">1 / 10</span>
+      <button class="ctrl" id="btn-next" onclick="stepSlide(1)">下一頁 →</button>
+    </div>
+  </footer>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const fill = document.getElementById('progress-fill');
+    const counter = document.getElementById('counter');
+    const indicator = document.getElementById('wiki-indicator');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
+    let idx = 0;
+
+    function render() {
+      slides.forEach((el, i) => el.classList.toggle('active', i === idx));
+      const total = slides.length;
+      counter.textContent = `${idx + 1} / ${total}`;
+      fill.style.width = `${((idx + 1) / total) * 100}%`;
+      indicator.textContent = `Wiki：${slides[idx].dataset.wiki}`;
+      btnPrev.disabled = idx === 0;
+      btnNext.disabled = idx === total - 1;
+    }
+
+    function goSlide(target) {
+      if (target >= 0 && target < slides.length) {
+        idx = target;
+        render();
+      }
+    }
+
+    function stepSlide(delta) {
+      goSlide(idx + delta);
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        stepSlide(1);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        stepSlide(-1);
+      }
+    });
+
+    function checkAns(id, ok) {
+      const target = document.getElementById(id);
+      if (ok) {
+        target.style.color = '#34d399';
+        target.textContent = '✓ 正確！';
+      } else {
+        target.style.color = '#fb7185';
+        target.textContent = '✗ 再想想看，提示：不靠單一位置或單一分段。';
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>
